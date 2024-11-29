@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Orçamento Benny's</title>
+    <style>
+        /* Estilos CSS (coloque seus estilos aqui) */
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('https://i.pinimg.com/originals/9c/7b/e4/9c7be43979a736a8695361a544630b97.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #container {
+            width: 100%;
+            max-width: 90vw;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .task {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 5px 0;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .task input[type="checkbox"] {
+            transform: scale(1.5);
+        }
+
+        .task-text {
+            flex-grow: 1;
+            color: #333;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-indent: 2mm;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+        }
+
+        .quantity-control {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 5px;
+        }
+
+        .total {
+            font-weight: bold;
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .remove-task,
+        .edit-task {
+            cursor: pointer;
+            color: #ff4d4d;
+            margin-left: 10px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        button {
+            width: 100%;
+            margin: 5px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .add-task-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-task-container input[type="text"],
+        .add-task-container input[type="number"],
+        .add-task-container button {
+            flex: 1;
+        }
+
+        .amount {
+            width: 80px;
+            display: inline-block;
+        }
+
+        .calculator {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .calculator input[type="number"] {
+            padding: 1px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            height: 25px;
+        }
+
+        .calculator button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        #add-task {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .reset-button {
+            background-color: #4CAF50; /* Cor de fundo azul */
+            color: white; /* Cor do texto branca */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 10px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <h1>ORÇAMENTO BENNY'S</h1>
+        <ul id="task-list"></ul>
+        <div class="add-task-container">
+            <input type="text" id="new-task" placeholder="Nome">
+            <input type="number" id="value2" placeholder="Valor">
+            <button id="add-task">Adicionar</button>
+			<button id="save-config" class="reset-button">Salvar</button>
+            <button id="import-config" class="reset-button">Importar</button>
+            <input type="file" id="import-file" accept=".json" style="display: none;">
+            <button id="reset" class="reset-button">Limpar</button> <!-- Botão de reset -->
+        </div>
+        <p class="total">Valor Total de Comissões: R$ <span id="total-value2">0.00</span></p>
+
+        <!-- Adicione uma nova entrada de valor -->
+        <div class="calculator">
+            <input type="number" id="additional-value" placeholder="Valor da Máquina">
+            <button id="calculate-total">Calcular</button>
+            <p> <strong>Cobrar do Cliente:R$</strong><span id="new-total-value" style="font-weight: bold">0.00</span></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const taskList = document.getElementById("task-list");
+            const totalValue2 = document.getElementById("total-value2");
+            const newTask = document.getElementById("new-task");
+            const value2 = document.getElementById("value2");
+            const addTaskButton = document.getElementById("add-task");
+            const calculateTotalButton = document.getElementById("calculate-total");
+            const additionalValueInput = document.getElementById("additional-value");
+            const newTotalValue = document.getElementById("new-total-value");
+            const resetButton = document.getElementById("reset"); // Botão de reset
+
+            // Carregar tarefas salvas no localStorage ao iniciar
+            loadTasks();
+
+            addTaskButton.addEventListener("click", addNewTask);
+            resetButton.addEventListener("click", resetAll); // Adiciona evento de reset
+
+            function addNewTask() {
+                const taskText = newTask.value.trim();
+                const taskValue2 = parseFloat(value2.value);
+
+                if (taskText && !isNaN(taskValue2) && taskValue2 > 0) {
+                    addTask(taskText, taskValue2, false, 0);
+                    newTask.value = "";
+                    value2.value = "";
+                    saveTasks();
+                }
+            }
+
+            function addTask(taskText, taskValue2, completed, quantity) {
+                const task = document.createElement("li");
+                task.className = "task";
+                task.innerHTML = `
+                    <input type="checkbox" ${completed ? "checked" : ""}>
+                    <span class="task-text">${taskText}</span>
+                    <div class="quantity-controls">
+                        <button class="quantity-control">+</button>
+                        <span class="task-quantity">${quantity}</span>
+                        <button class="quantity-control">-</button>
+                    </div>
+                    <span class="task-value amount">R$ ${taskValue2.toFixed(2)}</span>
+                    <span class="edit-task">✎</span>
+                    <span class="remove-task">✖</span>
+                `;
+
+                // Adicione os event listeners para ações
+                const checkbox = task.querySelector("input[type=checkbox");
+                checkbox.addEventListener("change", () => {
+                    const isChecked = checkbox.checked;
+                    task.querySelector(".task-quantity").textContent = isChecked ? 1 : 0;
+                    updateTotal();
+                    saveTasks();
+                });
+
+                const quantityControls = task.querySelectorAll(".quantity-control");
+                quantityControls[0].addEventListener("click", () => {
+                    const taskQuantity = parseInt(task.querySelector(".task-quantity").textContent);
+                    task.querySelector(".task-quantity").textContent = taskQuantity + 1;
+                    updateTotal();
+                    saveTasks();
+                });
+                quantityControls[1].addEventListener("click", () => {
+                    const taskQuantity = parseInt(task.querySelector(".task-quantity").textContent);
+                    if (taskQuantity > 0) {
+                        task.querySelector(".task-quantity").textContent = taskQuantity - 1;
+                        updateTotal();
+                        saveTasks();
+                    }
+                });
+
+                const editButton = task.querySelector(".edit-task");
+                editButton.addEventListener("click", () => {
+                    const editedTaskText = prompt("Editar nome da tarefa:", taskText);
+                    if (editedTaskText !== null) {
+                        task.querySelector(".task-text").textContent = editedTaskText;
+                    }
+
+                    const editedValue2 = parseFloat(prompt("Editar Valor 2:", taskValue2));
+                    if (!isNaN(editedValue2) && editedValue2 > 0) {
+                        task.querySelector(".task-value").textContent = `R$ ${editedValue2.toFixed(2)}`;
+                    }
+
+                    updateTotal();
+                    saveTasks();
+                });
+
+                const removeButton = task.querySelector(".remove-task");
+                removeButton.addEventListener("click", () => {
+                    taskList.removeChild(task);
+                    updateTotal();
+                    saveTasks();
+                });
+
+                taskList.appendChild(task);
+                updateTotal();
+            }
+
+            function updateTotal() {
+                let total2 = 0;
+                const tasks = document.querySelectorAll(".task");
+                tasks.forEach(task => {
+                    const quantity = parseInt(task.querySelector(".task-quantity").textContent);
+                    const value2 = parseFloat(task.querySelector(".task-value").textContent.replace("R$ ", "").replace(",", "."));
+                    total2 += quantity * value2;
+                });
+                totalValue2.textContent = total2.toFixed(2);
+            }
+
+            calculateTotalButton.addEventListener("click", () => {
+                const additionalValue = parseFloat(additionalValueInput.value) || 0;
+                const currentTotal = parseFloat(totalValue2.textContent) || 0;
+                const newTotal = currentTotal + additionalValue;
+                newTotalValue.textContent = newTotal.toFixed(2);
+                saveTasks(); // Salvar o resultado da calculadora
+            });
+
+            function saveTasks() {
+                const tasks = [];
+                const taskElements = document.querySelectorAll(".task");
+                taskElements.forEach(taskElement => {
+                    const taskText = taskElement.querySelector(".task-text").textContent;
+                    const taskValue2 = parseFloat(taskElement.querySelector(".task-value").textContent.replace("R$ ", "").replace(",", "."));
+                    const completed = taskElement.querySelector("input[type=checkbox]").checked;
+                    const quantity = parseInt(taskElement.querySelector(".task-quantity").textContent);
+                    tasks.push({ text: taskText, value2: taskValue2, completed, quantity });
+                });
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+
+                // Salvar os valores da calculadora
+                const additionalValue = parseFloat(additionalValueInput.value) || 0;
+                const newTotal = parseFloat(newTotalValue.textContent.replace("R$ ", "").replace(",", "."));
+
+                const calculatorData = {
+                    additionalValue,
+                    newTotal,
+                };
+
+                localStorage.setItem("calculatorData", JSON.stringify(calculatorData));
+            }
+
+            function loadTasks() {
+                const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+                taskList.innerHTML = "";
+                savedTasks.forEach(task => {
+                    addTask(task.text, task.value2, task.completed, task.quantity);
+                });
+                updateTotal();
+            }
+			
+
+            // Carregar os valores da calculadora
+            const calculatorData = JSON.parse(localStorage.getItem("calculatorData"));
+            if (calculatorData) {
+                additionalValueInput.value = calculatorData.additionalValue;
+                newTotalValue.textContent = calculatorData.newTotal.toFixed(2);
+            }
+
+            // Função de reset
+            function resetAll() {
+                const checkboxes = document.querySelectorAll(".task input[type=checkbox]");
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+
+                const quantities = document.querySelectorAll(".task-quantity");
+                quantities.forEach(quantity => {
+                    quantity.textContent = 0;
+                });
+
+                newTotalValue.textContent = "0.00";
+                additionalValueInput.value = "";
+                totalValue2.textContent = "0.00"; // Resetar o total de comissões
+				
+				saveTasks(); // Salvar o estado após o reset
+            }
+		
+		 // Referências aos novos elementos do DOM
+    const saveConfigButton = document.getElementById("save-config");
+    const importFileInput = document.getElementById("import-file");
+    const importConfigButton = document.getElementById("import-config");
+
+    // Evento para salvar configuração
+    saveConfigButton.addEventListener("click", saveConfig);
+	
+
+    // Evento para importar configuração
+    importConfigButton.addEventListener("click", function () {
+    importFileInput.click();
+});
+
+importFileInput.addEventListener("change", function () {
+    const file = importFileInput.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (importedData) {
+                    if (importedData.tasks && Array.isArray(importedData.tasks)) {
+                        // Limpar as tarefas existentes antes de importar
+                        taskList.innerHTML = "";
+
+                        // Adicionar as tarefas importadas
+                        importedData.tasks.forEach(task => {
+                            addTask(task.text, task.value2, task.completed, task.quantity);
+                        });
+
+                        // Atualizar o total
+                        updateTotal();
+                        saveTasks();
+                    } else {
+                        alert("O arquivo JSON importado não tem o formato correto.");
+                    }
+                } else {
+                    alert("Nenhum dado válido encontrado no arquivo.");
+                }
+            } catch (error) {
+                alert("Erro ao analisar o arquivo JSON: " + error);
+            }
+        };
+        reader.readAsText(file);
+        }
+    });
+
+    // Função para salvar a configuração em um arquivo JSON
+    function saveConfig() {
+        const tasks = [];
+        const taskElements = document.querySelectorAll(".task");
+        taskElements.forEach(taskElement => {
+            const taskText = taskElement.querySelector(".task-text").textContent;
+            const taskValue2 = parseFloat(taskElement.querySelector(".task-value").textContent.replace("R$ ", "").replace(",", "."));
+            const completed = taskElement.querySelector("input[type=checkbox]").checked;
+            const quantity = parseInt(taskElement.querySelector(".task-quantity").textContent);
+            tasks.push({ text: taskText, value2: taskValue2, completed, quantity });
+        });
+
+        const calculatorData = {
+            additionalValue: parseFloat(additionalValueInput.value) || 0,
+            newTotal: parseFloat(newTotalValue.textContent.replace("R$ ", "").replace(",", ".")) || 0,
+        };
+
+        const configData = {
+            tasks,
+            calculatorData,
+        };
+
+        const jsonConfig = JSON.stringify(configData);
+
+        // Crie um Blob com o conteúdo JSON e um link para download
+        const blob = new Blob([jsonConfig], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "config.json";
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+});
+    </script>
+</body>
+
+</html>
